@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 
 # Copy the solution and restore any dependencies
-COPY ["YourSolution.sln", "./"]
+COPY ["SimpleMediaLibrary.sln.sln", "./"]
 COPY ["Player/Player.csproj", "Player/"]
 COPY ["Common/Common.csproj", "Common/"]
 COPY ["Persistence/Persistence.csproj", "Persistence/"]
