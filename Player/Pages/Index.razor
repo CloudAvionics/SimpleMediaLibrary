@@ -1,0 +1,163 @@
+﻿@page "/"
+@using DataAccessService.DataAccess;
+@using Persistence.Model;
+@using SimpleMediaLibrary.Common;
+@using System.Diagnostics;
+@implements IDisposable
+@using System.Threading
+
+@inject IJSRuntime JSRuntime;
+@inject IMediaFileRepository MediaRepo;
+@inject IMediaFileEventMediator Mediator
+@inject IAppConfigRepository AppConfig;
+
+<PageTitle>@AppName</PageTitle>
+
+
+<MudContainer Class="mt-16 px-8" MaxWidth="MaxWidth.False">
+    <MudGrid>
+        <MudItem xs="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 250px; overflow: hidden;">
+                <MudText>Select a date</MudText>
+                <MudDatePicker Label="Filter by Date" Date="@selectedDate" DateChanged="@ApplyFilter" />
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="8">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 250px; overflow: hidden;">
+                <HowlerPlayer @ref="howlerPlayer" />
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12">
+            <MudTable Items="FilteredMediaFiles" Dense="true" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<MediaFile, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<MediaFile, object>(x=>x.Metadata.Title)">Title</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<MediaFile, object>(x=>x.Metadata.PublishDate)">Published Date</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<MediaFile, object>(x=>x.Metadata.PublishTime)">Published Time</MudTableSortLabel></MudTh>
+                    <MudTh>Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Name" @onclick="@(() => SetAudioSource(context))">@context.Name</MudTd>
+                    <MudTd DataLabel="Title">@context?.Metadata?.Title</MudTd>
+                    <MudTd DataLabel="Date Published">@GetPublishDateShortString(context)</MudTd>
+                    <MudTd DataLabel="Time Published">@GetPublishTime(context)</MudTd>
+                    <MudTd DataLabel="Actions">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert">
+                            <MudMenuItem>
+                                <a href="@($"/media/{context.Name}")" download="@context.Name">Download File</a>
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+                </PagerContent>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code{
+    public IEnumerable<MediaFile>? MediaFiles;
+    public string RecordingDir = String.Empty;
+    public IEnumerable<MediaFile>? FilteredMediaFiles;
+    public DateTime? selectedDate = DateTime.Now;
+    public string AppName = "Simple Media Library";
+    public string audioSource = "";
+    private HowlerPlayer howlerPlayer = new HowlerPlayer();
+    private string currentDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+    private Timer timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        MediaFiles = await MediaRepo.GetMediaFiles();
+        AppName = await AppConfig.GetApplicationNameAsync();
+        Mediator.MediaFileChanged += OnMediaFileChanged;
+        RecordingDir = await AppConfig.GetRecordingPathConfigAsync();
+        ApplyFilter(selectedDate);
+    }
+
+    private void SetAudioSource(MediaFile context)
+    {
+        string newAudioSource = Path.Combine("media", context.Name);
+        howlerPlayer.SetAudioSource(newAudioSource);
+        StateHasChanged();
+    }
+
+    private void ApplyFilter(DateTime? date)
+    {
+        selectedDate = date;
+        if(MediaFiles == null)
+        {
+            return;
+        }
+
+        if (date.HasValue)
+        {
+            FilteredMediaFiles = MediaFiles.Where(m => m.Metadata?.PublishDate == date.Value.Date);
+        }
+        else
+        {
+            FilteredMediaFiles = MediaFiles;
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetPublishDateShortString(MediaFile context)
+    {
+        if (context?.Metadata?.PublishDate.HasValue == true)
+        {
+            return context.Metadata.PublishDate.Value.ToShortDateString();
+        }
+        return "";
+    }
+
+    private string GetPublishTime(MediaFile context)
+    {
+        if (context?.Metadata?.PublishTime.HasValue == true)
+        {
+            return context.Metadata.PublishTime.Value.TimeOfDay.ToString();
+        }
+        return "";
+    }
+
+    private async void OnMediaFileChanged(object? sender, MediaFileChangedEventArgs e)
+    {
+        if (MediaFiles == null)
+        {
+            return;
+        }
+
+        await InvokeAsync(() =>
+            {
+                switch (e.TypeOfChange)
+                {
+                    case ChangeType.Added:
+                        MediaFiles = MediaFiles.Append(e.ChangedMediaFile);
+                        break;
+                    case ChangeType.Deleted:
+                        MediaFiles = MediaFiles.Where(m => m.Name != e.ChangedMediaFile.Name);
+                        break;
+                    case ChangeType.MarkedDeleted:
+                        MediaFiles = MediaFiles.Where(m => m.Name != e.ChangedMediaFile.Name);
+                        break;
+                }
+                ApplyFilter(selectedDate);
+                StateHasChanged();  // Notify Blazor that the state has changed and UI needs to be updated
+            });
+    }
+
+    private void UpdateDateTime()
+    {
+        currentDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        InvokeAsync(StateHasChanged);  // Re-render the component
+    }
+
+    // Don't forget to unsubscribe when the component is disposed
+    public void Dispose()
+    {
+       Mediator.MediaFileChanged -= OnMediaFileChanged;
+       timer?.Dispose();
+    }
+}

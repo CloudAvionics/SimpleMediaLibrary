@@ -1,0 +1,55 @@
+﻿
+@inherits LayoutComponentBase
+@inject IAppConfigRepository AppConfig
+@inject IBlazorEventService BlazorEventService
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar>
+        <MudText>
+            @companyName - @appName
+        </MudText>
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Outlined.House" Color="Color.Inherit" Href="/" />
+        <MudIconButton Icon="@Icons.Outlined.Settings" Color="Color.Inherit" Href="settings"/>
+    </MudAppBar>
+    <MudMainContent>
+        <MudContainer>
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    bool _drawerOpen = true;
+    public MudTheme _theme = new();
+    public string appName = String.Empty;
+    public string companyName = String.Empty;
+
+    protected override async void OnInitialized()
+    {
+        appName = await AppConfig.GetApplicationNameAsync();
+        companyName = await AppConfig.GetCompanyNameAsync();
+
+        BlazorEventService.OnChange += OnDataChanged;
+    }
+
+    public async void OnDataChanged()
+    {
+        appName = await AppConfig.GetApplicationNameAsync();
+        companyName = await AppConfig.GetCompanyNameAsync();
+        StateHasChanged();
+    }    
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    public void Dispose()
+    {
+        BlazorEventService.OnChange -= OnDataChanged;
+    }
+}

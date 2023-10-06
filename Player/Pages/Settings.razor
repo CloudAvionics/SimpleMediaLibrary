@@ -1,0 +1,99 @@
+﻿@inherits ComponentBase
+@page "/settings"
+@using Player.Services;
+@inject IAppConfigRepository ConfigRepo
+@inject IFileSyncService SyncService
+@inject IBlazorEventService BlazorEventService
+
+
+<PageTitle>Settings</PageTitle>
+@if (_config == null)
+{
+    <h2>Loading settings...</h2>
+    <MudProgressLinear Color="MudBlazor.Color.Primary" Indeterminate = "true" Class="my-7" />
+}
+else
+{
+    <MudPaper Class="pa-16 ma-2" Elevation="3">
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h5">General Application Settings</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudTextField @bind-Value="ApplicationNameConfig"
+                              Label="Application Name" HelperText="Name to display in the user interface" Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="CompanyNameConfig"
+                              Label="Your Company Name" HelperText="Your company name" Variant="Variant.Outlined" />
+            </MudCardContent>
+        </MudCard>
+        <MudDivider DividerType="DividerType.Middle" Class="my-6" />
+        <MudCard>
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h5">Library Settings</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudTextField @bind-Value="RecordingDirConfig"
+                              Label="Library Directory Path" HelperText="This folder/directory is where your media files are located" Variant="Variant.Outlined" />
+
+                <MudTextField @bind-Value="MediaFileNamingConventionConfig"
+                              Label="Media File Naming Convention"
+                              HelperText="Simple Media Library will attempt to populate media file meta data using this naming convention.
+                                  See the template below for more information. The system defualt is {station}_{genre}_{title}_{date}_{time}"
+                              Variant="Variant.Outlined" />
+            </MudCardContent>
+        </MudCard>
+    </MudPaper>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettings" ButtonType="ButtonType.Button" >Save</MudButton>
+}
+
+@code
+{
+    public MainLayout mainLayout { get; set; }
+
+    private const string RecordingsDirConfigName = "RecordingDir";
+    private const string ApplicationNameConfigName = "ApplicationName";
+    private const string CompanyNameConfigName = "CompanyName";
+    private const string MediaFileNamingConventionConfigName = "MediaFileNamingConvention";
+
+    public IEnumerable<AppConfig>? _config;
+    public string RecordingDirConfig = string.Empty;
+    public string ApplicationNameConfig = string.Empty;
+    public string CompanyNameConfig = string.Empty;
+    public string MediaFileNamingConventionConfig = string.Empty;
+
+    protected override async void OnInitialized()
+    {
+        _config = await ConfigRepo.GetAll() ?? new List<AppConfig>();
+        RecordingDirConfig = _config?
+                                .Where(p => p.ConfigName == RecordingsDirConfigName)
+                                .FirstOrDefault()?.ConfigValue ?? "";
+        ApplicationNameConfig = _config?
+                                .Where(p => p.ConfigName == ApplicationNameConfigName)
+                                .FirstOrDefault()?.ConfigValue ?? "";
+        CompanyNameConfig = _config?
+                                .Where(p => p.ConfigName == CompanyNameConfigName)
+                                .FirstOrDefault()?.ConfigValue ?? "";
+        MediaFileNamingConventionConfig = _config?
+                                .Where(p => p.ConfigName == MediaFileNamingConventionConfigName)
+                                .FirstOrDefault()?.ConfigValue ?? "";
+
+
+    }
+
+    private async Task SaveSettings()
+    {
+        await ConfigRepo.SetRecordingPathConfigAsync(RecordingDirConfig);
+        await ConfigRepo.SetApplicationNameAsync(ApplicationNameConfig);
+        await ConfigRepo.SetMediaFileNamingConventionAsync(MediaFileNamingConventionConfig);
+        await ConfigRepo.SetCompanyNameAsync(CompanyNameConfig);
+        await SyncService.TaskSyncFilesWithDatabaseAsync();
+
+        BlazorEventService.NotifyDataChanged();
+    }
+}

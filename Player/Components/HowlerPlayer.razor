@@ -1,0 +1,124 @@
+﻿@inject IJSRuntime JSRuntime
+
+<MudContainer>
+    <MudGrid>
+        <MudItem xs="2"><MudText>Start Time: @currentTime</MudText></MudItem>
+        <MudItem xs="8"><MudText Typo="Typo.h6">@Path.GetFileName(audioSource)</MudText></MudItem>
+        <MudItem xs="2"><MudText>End Time: @totalDuration</MudText></MudItem>
+        <MudItem xs="12">
+            <MudSlider Max="100" Min="0" 
+                Value="@progress" Color="Color.Primary" 
+                Variant="Variant.Filled" Immediate="false" Step="0.10"></MudSlider>
+        </MudItem>
+    </MudGrid>
+    <MudGrid>
+        <MudItem xs="6">
+            <MudSlider Max="4" Min="0.5" Step="0.5" TickMarkLabels="@speedLabels"
+                       Value="@speed" Color="Color.Primary" TickMarks="true" Class="pa-2 ma-2"
+                       ValueChanged="new EventCallback<double>(this, OnSpeedValueChanged)">Playback Speed</MudSlider>
+        </MudItem>
+        <MudItem xs="2"></MudItem>
+        <MudItem xs="4">
+            <MudButton Disabled=@btnStartDisabled Class="pa-2 ma-2"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.PlayArrow"
+                       OnClick="Play">
+                Start
+            </MudButton>
+            <MudButton Disabled=@btnStopDisabled Class="pa-2 ma-2"
+                       Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Stop"
+                       OnClick="Stop">
+                Stop
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudContainer>  
+
+<style>
+    .mud-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .mud-item {
+        display: flex;
+        gap: 1rem;
+    }
+</style>
+
+@code {
+    private string audioSource = String.Empty;
+    private double progress = 0;
+    private double speed = 1;
+    private double totalDurationSeconds = 0;
+    private string currentTime = "0:00";
+    private string totalDuration = "0:00";
+    private bool btnStartDisabled = true;
+    private bool btnStopDisabled = true;
+    string[] speedLabels = new string[] { "0.5x", "1x", "1.5x", "2x", "2.5x", "3x", "3.5x", "4x" };
+
+
+    public async void SetAudioSource(string newSource)
+    {
+        audioSource = newSource;
+        var dotNetHelper = DotNetObjectReference.Create(this);
+        await JSRuntime.InvokeVoidAsync("SmlPlayAudioFile", audioSource, dotNetHelper);
+    }
+
+    public async void OnSpeedValueChanged(double speed)
+    {
+        this.speed = speed;
+        await JSRuntime.InvokeVoidAsync("SmlSetPlaybackSpeed", speed);
+    }
+
+    [JSInvokable]
+    public void OnAudioStart()
+    {
+        this.btnStartDisabled = true;
+        this.btnStopDisabled = false;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnAudioStop()
+    {
+        this.btnStartDisabled = false;
+        this.btnStopDisabled = true;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void UpdateCurrentTimeAndDuration(double currentTime, double duration)
+    {
+        this.currentTime = TimeSpan.FromSeconds(currentTime).ToString(@"mm\:ss");
+        this.totalDuration = TimeSpan.FromSeconds(duration).ToString(@"mm\:ss");
+        this.totalDurationSeconds = TimeSpan.FromSeconds(duration).Seconds;
+        this.progress = TimeSpan.FromSeconds(currentTime) * 100 / TimeSpan.FromSeconds(duration);
+        if (TimeSpan.FromSeconds(currentTime).Seconds == 0)
+        {
+            this.btnStartDisabled = false;
+            this.btnStopDisabled = true;
+        }
+        else
+        {
+            this.btnStartDisabled = true;
+            this.btnStopDisabled = false;
+        }
+        StateHasChanged();
+    }
+
+    private async Task Play()
+    {
+        await JSRuntime.InvokeVoidAsync("SmlPlay");
+    }
+
+    private async Task Stop()
+    {
+        await JSRuntime.InvokeVoidAsync("SmlStop");
+    }
+}
