@@ -22,8 +22,10 @@ else
                 </CardHeaderContent>
             </MudCardHeader>
             <MudCardContent>
-                <MudTextField @bind-Value="ApplicationNameConfig"
-                              Label="Application Name" HelperText="Name to display in the user interface" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="ApplicationNameConfig" Immediate="true"
+                              Label="Application Name" 
+                              HelperText="Name to display in the user interface" 
+                              Variant="Variant.Outlined" />
 
                 <MudTextField @bind-Value="CompanyNameConfig"
                               Label="Your Company Name" HelperText="Your company name" Variant="Variant.Outlined" />
@@ -49,7 +51,14 @@ else
         </MudCard>
     </MudPaper>
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettings" ButtonType="ButtonType.Button" >Save</MudButton>
+    <MudButton Class="mt-4"
+        Style="float: right;"
+        Variant="Variant.Filled" 
+        Color="Color.Primary" 
+        OnClick="SaveSettings" 
+        ButtonType="ButtonType.Button">
+        Save
+    </MudButton>
 }
 
 @code
