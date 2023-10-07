@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
-using Persistence.Model;
+﻿using Persistence.Model;
 using System.Globalization;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Player.Services
 {
@@ -14,32 +12,34 @@ namespace Player.Services
             _logger = logger;
         }
 
-        public MediaFileMetadata ExtractMediaFileMetaData(string fileName, string nameTemplate)
+        public MediaFileMetadata? ExtractMediaFileMetaData(string fileName, string nameTemplate)
         {
-            // Remove file extension
-            fileName = fileName.Substring(0, fileName.LastIndexOf('.'));
-
-            // Split template and filename into parts
-            var templateParts = nameTemplate.Split(new[] { '_' }, StringSplitOptions.None);
-            var fileNameParts = fileName.Split(new[] { '_' }, StringSplitOptions.None);
-
-            if (templateParts.Length != fileNameParts.Length)
+            try
             {
-                _logger.LogError("Invalid file name based on template.");
-                throw new InvalidDataException("Invalid file name based on template");
-            }
+                // Remove file extension
+                fileName = fileName.Substring(0, fileName.LastIndexOf('.'));
 
-            var keysDict = new Dictionary<string, string>();
+                // Split template and filename into parts
+                var templateParts = nameTemplate.Split(new[] { '_' }, StringSplitOptions.None);
+                var fileNameParts = fileName.Split(new[] { '_' }, StringSplitOptions.None);
 
-            for (int i = 0; i < templateParts.Length; i++)
-            {
-                var key = templateParts[i].Trim('{', '}');
-                var value = fileNameParts[i];
-                keysDict[key] = value;
-            }
+                if (templateParts.Length != fileNameParts.Length)
+                {
+                    _logger.LogError("Invalid file name based on template.");
+                    throw new InvalidDataException("Invalid file name based on template");
+                }
 
-            MediaFileMetadata metadata = new MediaFileMetadata();
-            var actionMap = new Dictionary<string, Action<string>>
+                var keysDict = new Dictionary<string, string>();
+
+                for (int i = 0; i < templateParts.Length; i++)
+                {
+                    var key = templateParts[i].Trim('{', '}');
+                    var value = fileNameParts[i];
+                    keysDict[key] = value;
+                }
+
+                MediaFileMetadata metadata = new MediaFileMetadata();
+                var actionMap = new Dictionary<string, Action<string>>
             {
                 { "author", value => metadata.Author = value },
                 { "content", value => metadata.Content = value },
@@ -59,7 +59,7 @@ namespace Player.Services
                         }
                         else
                         {
-                            
+
                         }
                     }
                 },
@@ -75,16 +75,23 @@ namespace Player.Services
                 { "title", value => metadata.Title = value }
             };
 
-            // Loop over the metadata and apply actions based on keys
-            foreach (var metaEntry in keysDict)
-            {
-                if (actionMap.TryGetValue(metaEntry.Key, out var action))
+                // Loop over the metadata and apply actions based on keys
+                foreach (var metaEntry in keysDict)
                 {
-                    action(metaEntry.Value);
+                    if (actionMap.TryGetValue(metaEntry.Key, out var action))
+                    {
+                        action(metaEntry.Value);
+                    }
                 }
-            }
 
-            return metadata;
+                return metadata;
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"{DateTime.Now}: Exception: {ex.Message}");
+                return null;
+            }
         }
     }
 }

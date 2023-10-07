@@ -6,6 +6,7 @@
 	  <ImplicitUsings>enable</ImplicitUsings>
 	  <UserSecretsId>a43511ee-4d09-448f-920b-58af7219723d</UserSecretsId>
 	  <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	  <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +29,7 @@
 
   <ItemGroup>
     <Folder Include="Data\" />
+    <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
   
   <Target Name="CreateDataFolder" AfterTargets="Build">

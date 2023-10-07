@@ -1,7 +1,6 @@
 using DataAccessService;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using MudBlazor.Services;
 using Player.Services;
 using SimpleLibrary.Persistence;
@@ -29,10 +28,17 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<SimpleLibraryDbContext>();
-    // this will apply any pending migrations
-    //dbContext.Database.EnsureCreated();
-    dbContext.Database.Migrate();
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<SimpleLibraryDbContext>();
+        // this will apply any pending migrations
+        //dbContext.Database.EnsureCreated();
+        dbContext.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"{DateTime.Now}: Exception: {ex}");
+    }
 }
 
 
@@ -51,7 +57,7 @@ app.Use(async (context, next) =>
     var mediaFileConfig = app.Services.GetRequiredService<IMediaFileConfiguration>();
     var path = context.Request.Path.Value;
 
-    Console.WriteLine($"Requested path: {path}");  // Debugging line
+    Console.WriteLine($"{DateTime.Now}: Requested path: {path}");  // Debugging line
 
 
     // Use the path from the injected AudioFileConfiguration
@@ -63,7 +69,7 @@ app.Use(async (context, next) =>
 
         var physicalPath = System.IO.Path.Combine(mediaFilePath, filename);
 
-        Console.WriteLine($"Physical path: {physicalPath}");  // Debugging line
+        Console.WriteLine($"{DateTime.Now}: Physical path: {physicalPath}");  // Debugging line
 
 
         if (System.IO.File.Exists(physicalPath))
@@ -73,7 +79,7 @@ app.Use(async (context, next) =>
         }
         else
         {
-            Console.WriteLine("File not found.");  // Debugging line
+            Console.WriteLine($"{DateTime.Now}: File not found: {physicalPath}");  // Debugging line
         }
     }
 

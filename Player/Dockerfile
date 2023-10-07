@@ -1,26 +1,25 @@
-# Use the SDK image to build the app
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-
-# Copy the solution and restore any dependencies
-COPY ["SimpleMediaLibrary.sln.sln", "./"]
 COPY ["Player/Player.csproj", "Player/"]
 COPY ["Common/Common.csproj", "Common/"]
 COPY ["Persistence/Persistence.csproj", "Persistence/"]
 COPY ["DataAccessService/DataAccessService.csproj", "DataAccessService/"]
-RUN dotnet restore "YourSolution.sln"
-
-# Copy everything else and build
+RUN dotnet restore "Player/Player.csproj"
 COPY . .
 WORKDIR "/src/Player"
 RUN dotnet build "Player.csproj" -c Release -o /app/build
 
-# Publish
 FROM build AS publish
-RUN dotnet publish "Player.csproj" -c Release -o /app/publish
+RUN dotnet publish "Player.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Copy the build app to the base image and define entrypoint
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+FROM base AS final
 WORKDIR /app
+ENV ASPNETCORE_URLS="http://+:80;https://+:443"
+RUN mkdir -p /app/Data  # Create Data directory
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Player.dll"]
