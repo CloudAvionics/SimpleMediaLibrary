@@ -17,5 +17,5 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t your-dockerhub-username/your-repo-name:latest .
-        docker push your-dockerhub-username/your-repo-name:latest
+        docker build -t cloudavionics/player:latest .
+        docker push cloudavionics/player:latest
