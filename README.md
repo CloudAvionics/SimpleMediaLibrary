@@ -1,4 +1,5 @@
 # SimpleMediaLibrary
+[![Build and Push Docker Image](https://github.com/CloudAvionics/SimpleMediaLibrary/actions/workflows/docker-build.yml/badge.svg)](https://github.com/CloudAvionics/SimpleMediaLibrary/actions/workflows/docker-build.yml)
 
 ## Table of Contents
 
