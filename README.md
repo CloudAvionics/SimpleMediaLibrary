@@ -125,7 +125,7 @@ docker run -d --name mediaplayer \
   -p 5443:443 \
   -p 8080:80 \
   --restart unless-stopped \
-  cloudavionics/player:latest
+  cloudavionics/player:latest-arm64
   ```
 
 ## Contributing
