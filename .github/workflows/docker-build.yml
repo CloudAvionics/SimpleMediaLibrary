@@ -17,5 +17,5 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t cloudavionics/player:latest .
-        docker push cloudavionics/player:latest
+        docker build -t cloudavionics/player:latest-arm64 .
+        docker push cloudavionics/player:latest-arm64
