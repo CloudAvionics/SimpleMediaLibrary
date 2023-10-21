@@ -2,9 +2,12 @@ using DataAccessService;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using Player;
 using Player.Services;
 using SimpleLibrary.Persistence;
 using SimpleMediaLibrary.Common;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,17 @@ builder.Services.AddSingleton<IMediaFileConfiguration, MediaFileConfiguration>()
 builder.Services.AddScoped<IBlazorEventService, BlazorEventService>();
 builder.Services.AddDataAccesServices(builder.Configuration);
 builder.Services.AddHostedService<FileManagementBackgroundService>();
+
+(string password, string certPath) = CertificateBootstrapperRegistration.CheckAndCreateCertificate(builder.Configuration);
+
+builder.WebHost.UseKestrel(options =>
+{
+    options.ConfigureHttpsDefaults(opt =>
+    {
+        opt.ServerCertificate = new X509Certificate2(certPath, password);
+        opt.SslProtocols = SslProtocols.Tls12;
+    });
+});
 
 var app = builder.Build();
 

@@ -1,0 +1,152 @@
+﻿@inject IJSRuntime JsRuntime;
+@implements IDisposable;
+
+<MudContainer>
+    <audio id="audio" />
+    <MudGrid>
+        <MudItem xs="2"><MudText>Start Time: @CurrentTime</MudText></MudItem>
+        <MudItem xs="8"><MudText Typo="Typo.h6">@Path.GetFileName(TrackName)</MudText></MudItem>
+        <MudItem xs="2"><MudText>End Time: @TotalDuration</MudText></MudItem>
+        <MudItem xs="12">
+            <MudSlider Max="100" Min="0"
+                       Value="@progress" Color="Color.Primary"
+                       Variant="Variant.Filled" Immediate="false" Step="0.10"></MudSlider>
+        </MudItem>
+    </MudGrid>
+    <MudGrid>
+        <MudItem xs="6">
+            <MudSlider Max="2" Min="0.5" Step="0.5" TickMarkLabels="@speedLabels"
+                       Value="@speed" Color="Color.Primary" TickMarks="true" Class="pa-2 ma-2"
+                       ValueChanged="new EventCallback<double>(this, OnSpeedValueChanged)">Playback Speed</MudSlider>
+        </MudItem>
+        <MudItem xs="2"></MudItem>
+        <MudItem xs="4">
+            <MudButton Disabled=@btnPlayDisabled Class="pa-2 ma-2"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.PlayArrow"
+                       OnClick="Play">
+                Start
+            </MudButton>
+            <MudButton Disabled=@btnStopDisabled Class="pa-2 ma-2"
+                       Variant="Variant.Filled"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Stop"
+                       OnClick="Stop">
+                Stop
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+<style>
+    .mud-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .mud-item {
+        display: flex;
+        gap: 1rem;
+    }
+</style>
+
+@code {
+    private int seekValue = 0;
+    private string audioSource = String.Empty;
+    private double speed = 1;
+    private string[] speedLabels = new string[] { "0.5x", "1x", "1.5x", "2x" };
+    private bool btnPlayDisabled = true;
+    private bool btnStopDisabled = true;
+    private double progress = 0;
+
+    public string TrackName = string.Empty;
+    public string TrackArtist = string.Empty;
+    public string CurrentTime = "00:00";
+    public string TotalDuration = "00:00";
+
+    private DotNetObjectReference<SimplePlayer>? dotNetHelper;
+
+
+    protected override void OnInitialized()
+    {
+        Console.WriteLine("SimplePlayer.razor initialized!");
+        dotNetHelper = DotNetObjectReference.Create(this);
+    }
+
+    public async void SetMediaFile(string filename)
+    {
+        await JsRuntime.InvokeVoidAsync("loadTrack", filename, dotNetHelper);
+    }
+
+    [JSInvokable]
+    public void OnAudioStart()
+    {
+        this.btnPlayDisabled = true;
+        this.btnStopDisabled = false;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnAudioStop()
+    {
+        this.btnPlayDisabled = false;
+        this.btnStopDisabled = true;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnCanPlay(string file)
+    {
+        TrackName = file;
+        this.btnPlayDisabled = false;
+        this.btnStopDisabled = true;
+        StateHasChanged();
+    }
+
+    public async void OnSpeedValueChanged(double speed)
+    {
+        this.speed = speed;
+        await JsRuntime.InvokeVoidAsync("setPlaybackSpeed", speed);
+    }
+
+    public async void SetSeek(ChangeEventArgs e)
+    {
+        seekValue = int.Parse(e.Value!.ToString() ?? "");
+        Console.WriteLine($"Setting track position to: {seekValue}");
+        await JsRuntime.InvokeVoidAsync("seekTo", seekValue);
+    }
+
+    [JSInvokable]
+    public void SetCurrentTime(string time)
+    {
+        this.CurrentTime = time;
+    }
+
+    [JSInvokable]
+    public void SetTotalDuration(string time)
+    {
+        this.TotalDuration = time;
+    }
+
+    private async Task Play()
+    {
+        await JsRuntime.InvokeVoidAsync("playpauseTrack");
+    }
+
+    private async Task Stop()
+    {
+        await JsRuntime.InvokeVoidAsync("stopTrack");
+    }
+
+
+    public void Dispose()
+    {
+        if (dotNetHelper != null)
+        {
+            dotNetHelper.Dispose();
+        }
+    }
+}
