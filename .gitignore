@@ -365,3 +365,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Player/Data/SimpleLibraryPlayer.db
+/Player/Data/SimpleLibraryPlayer.db-shm
+/Player/Data/SimpleLibraryPlayer.db-wal
