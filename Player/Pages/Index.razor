@@ -23,8 +23,8 @@
             </MudPaper>
         </MudItem>
         <MudItem xs="8">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 250px; overflow: hidden;">
-                <HowlerPlayer @ref="howlerPlayer" />
+            <MudPaper Elevation="2" Class="pa-4" Style="height: auto; overflow: hidden;">
+                <SimplePlayer @ref="simplePlayer" />
             </MudPaper>
         </MudItem>
         <MudItem xs="12">
@@ -64,7 +64,8 @@
     public DateTime? selectedDate = DateTime.Now;
     public string AppName = "Simple Media Library";
     public string audioSource = "";
-    private HowlerPlayer howlerPlayer = new HowlerPlayer();
+    //private HowlerPlayer howlerPlayer = new HowlerPlayer();
+    SimplePlayer simplePlayer = new SimplePlayer();
     private string currentDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
     private Timer timer;
 
@@ -80,7 +81,7 @@
     private void SetAudioSource(MediaFile context)
     {
         string newAudioSource = Path.Combine("media", context.Name);
-        howlerPlayer.SetAudioSource(newAudioSource);
+        simplePlayer.SetMediaFile(newAudioSource);
         StateHasChanged();
     }
 
