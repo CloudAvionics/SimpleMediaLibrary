@@ -2,8 +2,11 @@
 @inherits LayoutComponentBase
 @inject IAppConfigRepository AppConfig
 @inject IBlazorEventService BlazorEventService
+@inject NavigationManager NavManager
+@inject IFileSyncService SyncService
 
-<MudThemeProvider />
+
+<MudThemeProvider Theme="MediaLibraryTheme"/>
 <MudDialogProvider />
 <MudSnackbarProvider />
 
@@ -13,6 +16,14 @@
             @companyName - @appName
         </MudText>
         <MudSpacer />
+        @if (ShouldShowRefreshIcon())
+        {
+            <MudIconButton Icon="@Icons.Outlined.Sync"
+                           Color="Color.Inherit"
+                           OnClick="OnRefreshClick">
+            </MudIconButton>
+        }
+
         <MudIconButton Icon="@Icons.Outlined.House" Color="Color.Inherit" Href="/" />
         <MudIconButton Icon="@Icons.Outlined.Settings" Color="Color.Inherit" Href="settings"/>
     </MudAppBar>
@@ -24,10 +35,38 @@
 </MudLayout>
 
 @code {
+
+    // Let's sort out some colors
+    MudTheme MediaLibraryTheme = new MudTheme()
+        {
+            Palette = new PaletteLight()
+            {
+                Primary = Colors.BlueGrey.Darken4,
+                Secondary = Colors.BlueGrey.Darken1,
+                AppbarBackground = Colors.BlueGrey.Darken4,
+            },
+            PaletteDark = new PaletteDark()
+            {
+                Primary = Colors.Blue.Lighten1
+            },
+
+            LayoutProperties = new LayoutProperties()
+            {
+            }
+        };
+
     bool _drawerOpen = true;
     public MudTheme _theme = new();
     public string appName = String.Empty;
     public string companyName = String.Empty;
+
+    private bool ShouldShowRefreshIcon()
+    {
+        var baseUri = new Uri(NavManager.BaseUri);
+        var currentUri = new Uri(NavManager.Uri);
+        var relativePath = currentUri.PathAndQuery.Substring(baseUri.PathAndQuery.Length);
+        return string.IsNullOrEmpty(relativePath) || relativePath == "/" || relativePath == "/index";
+    }
 
     protected override async void OnInitialized()
     {
@@ -35,6 +74,11 @@
         companyName = await AppConfig.GetCompanyNameAsync();
 
         BlazorEventService.OnChange += OnDataChanged;
+    }
+
+    public async void OnRefreshClick()
+    {
+        await SyncService.TaskSyncFilesWithDatabaseAsync();
     }
 
     public async void OnDataChanged()

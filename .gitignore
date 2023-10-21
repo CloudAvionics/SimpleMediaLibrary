@@ -36,6 +36,9 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+Recordings/
+Recordings2/
+
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -365,3 +368,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Player/Data/SimpleLibraryPlayer.db
+/Player/Data/SimpleLibraryPlayer.db-shm
+/Player/Data/SimpleLibraryPlayer.db-wal
